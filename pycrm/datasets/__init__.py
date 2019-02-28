@@ -15,8 +15,8 @@ def load_cdnow_dataset(**kwargs):
 
     df = pd.read_csv(
         resource_filename('pycrm', f'datasets/{filename}'), 
-        names=['customer_id', 'date', 'items', 'revenue'],
-        parse_dates=["date"],
+        names=['customer_id', 'order_date', 'n_items', 'order_value'],
+        parse_dates=["order_date"],
         delim_whitespace=True, 
         **kwargs
     )
