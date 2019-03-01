@@ -3,6 +3,7 @@ import datetime as dt
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 
 
 def plot_transaction_timeseries(transaction_series, reg=False, **kwargs):
@@ -97,8 +98,13 @@ def plot_transaction_timeseries(transaction_series, reg=False, **kwargs):
     return ax
     
 
-
-
+def plot_user_retention_matrix(user_retention_matrix, ax=None):
+    
+    if not ax:
+        fig, ax = plt.subplots(figsize=(12, 8))
+        ax.set_title('Cohorts: User Retention')
+        
+    ax = sns.heatmap(user_retention_matrix.T, mask=user_retention_matrix.T.isnull(), annot=True, fmt='.0%');
 
 
 #####legacy
