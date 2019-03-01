@@ -55,25 +55,17 @@ def aggregate_transactions_time(df_transactions, aggregation="n_purchases", freq
 
 
 ### COHORT ###
-def cohort_period(df):
-    """
-    Creates a `cohort_period` column, which is the Nth period based on the user's first purchase.
-    """
-    df = df.copy()
-    df['cohort_period'] = np.arange(df.shape[0]) + 1
-    return df
 
-
-def user_retention_matrix(df_transactions, cohort_frequency="M", aggregation="n_customers", normalize=True):
+def assign_cohort(df_transactions, cohort_frequency="M"):
     
-    df_transactions.copy()
+    df_transactions = df_transactions.copy()
     
     # identifying cohort_group
     df_transactions = df_transactions.set_index('customer_id')
     if cohort_frequency=="M":
         df_transactions['cohort_group'] = df_transactions.groupby(level=0)['order_date'].min().apply(lambda x: x.strftime('%Y-%m'))
     elif cohort_frequency=="Q":
-        df_transactions['cohort_group'] = df_transactions.groupby(level=0)['order_date'].min().apply(lambda x: f"{x.year}-Q{(x.month//3+1)}")
+        df_transactions['cohort_group'] = df_transactions.groupby(level=0)['order_date'].min().apply(lambda x: f"{x.year}-Q{((x.month-1)//3+1)}")
     elif cohort_frequency=="S":
         df_transactions['cohort_group'] = df_transactions.groupby(level=0)['order_date'].min().apply(lambda x: f"{x.year}-S{((x.month-1)//6+1)}")
     elif cohort_frequency=="Y":
@@ -84,11 +76,25 @@ def user_retention_matrix(df_transactions, cohort_frequency="M", aggregation="n_
     if cohort_frequency=="M":
         df_transactions['order_period'] = df_transactions['order_date'].apply(lambda x: x.strftime('%Y-%m'))
     elif cohort_frequency=="Q":
-        df_transactions['order_period'] = df_transactions['order_date'].apply(lambda x: f"{x.year}-Q{(x.month//3+1)}")
+        df_transactions['order_period'] = df_transactions['order_date'].apply(lambda x: f"{x.year}-Q{((x.month-1)//3+1)}")
     elif cohort_frequency=="S":
         df_transactions['order_period'] = df_transactions['order_date'].apply(lambda x: f"{x.year}-S{((x.month-1)//6+1)}")
     elif cohort_frequency=="Y":
         df_transactions['order_period'] = df_transactions['order_date'].dt.year.astype(str)
+    
+    return df_transactions
+
+def set_cohort_period(df):
+    """
+    Creates a `cohort_period` column, which is the Nth period based on the user's first purchase.
+    """
+    df = df.copy()
+    df['cohort_period'] = np.arange(df.shape[0]) + 1
+    return df
+
+def user_retention_matrix(df_transactions, cohort_frequency="M", aggregation="n_customers", normalize=True, cohort_period=False, within_n_periods=None):
+    
+    df_transactions = assign_cohort(df_transactions, cohort_frequency=cohort_frequency)
 
     grouped = df_transactions.groupby(['cohort_group', "order_period"])
 
@@ -109,16 +115,21 @@ def user_retention_matrix(df_transactions, cohort_frequency="M", aggregation="n_
         }
     )
     
-    
-    cohorts = cohorts.groupby(level=0).apply(cohort_period)
-    cohorts = cohorts.reset_index()
-    cohorts = cohorts.set_index(['cohort_group', 'cohort_period'])
-    
+    if cohort_period:
+        cohorts = cohorts.groupby(level=0).apply(set_cohort_period)
+        cohorts = cohorts.reset_index()
+        if within_n_periods:
+            cohorts = cohorts[cohorts["cohort_period"] <= within_n_periods+1]
+
+        cohorts = cohorts.set_index(['cohort_group', 'cohort_period'])
+
+
     cohorts[aggregation].unstack(0)
-    
     user_retention = cohorts[aggregation].unstack(0)
     if normalize:
         cohort_group_size = cohorts[aggregation].groupby(level=0).first()
         user_retention = user_retention / (cohort_group_size)
     
+    if within_n_periods:
+        return user_retention.dropna(axis=1)
     return user_retention
