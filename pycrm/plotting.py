@@ -104,7 +104,7 @@ def plot_user_retention_matrix(user_retention_matrix, ax=None):
         fig, ax = plt.subplots(figsize=(12, 8))
         ax.set_title('Cohorts: User Retention')
         
-    ax = sns.heatmap(user_retention_matrix.T, mask=user_retention_matrix.T.isnull(), annot=True, fmt='.0%');
+    ax = sns.heatmap(user_retention_matrix.T, mask=user_retention_matrix.T.isnull(), annot=True, fmt='.0%')
 
 
 #####legacy
