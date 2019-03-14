@@ -1,3 +1,5 @@
+import datetime as dt
+
 import pandas as pd
 import numpy as np
 
@@ -133,3 +135,39 @@ def user_retention_matrix(df_transactions, cohort_frequency="M", aggregation="n_
     if within_n_periods:
         return user_retention.dropna(axis=1)
     return user_retention
+
+
+
+### INTERPURCHASE TIME ###
+
+def customer_avg_ipt(df_transactions, min_purchases=3, min_date=None, max_date=None):
+    aipt = (
+        df_transactions
+            [
+                (df_transactions["days_since_previous_purchase"] >= 0) & 
+                (df_transactions["total_customer_purchases"] >= min_purchases) & 
+                (df_transactions["order_date"] >= (min_date if min_date else df_transactions["order_date"].min())) & 
+                (df_transactions["order_date"] <= (max_date if max_date else df_transactions["order_date"].max()))
+            ]
+            .groupby("customer_id")
+                ["days_since_previous_purchase"]
+                .mean()
+    )
+
+    return aipt
+
+def customer_std_ipt(df_transactions, min_purchases=3, min_date=None, max_date=None):
+    aipt = (
+        df_transactions
+            [
+                (df_transactions["days_since_previous_purchase"] >= 0) & 
+                (df_transactions["total_customer_purchases"] >= min_purchases) & 
+                (df_transactions["order_date"] >= (min_date if min_date else df_transactions["order_date"].min())) & 
+                (df_transactions["order_date"] <= (max_date if max_date else df_transactions["order_date"].max()))
+            ]
+            .groupby("customer_id")
+                ["days_since_previous_purchase"]
+                .std()
+    )
+
+    return aipt
